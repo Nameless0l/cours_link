@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cours S7 ENSEA 2025-2026</title>
+    <meta name="description" content="Liste des cours de 7ème semestre ENSEA 2025-2026 avec liens Moodle">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main>
+        <h1>📚 Cours S7 ENSEA 2025-2026</h1>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="🔍 Rechercher un cours..." onkeyup="filterTable()">
+        </div>
+        <table id="coursTable">
+            <thead>
+                <tr>
+                    <th>Nom du cours</th>
+                    <th>ID</th>
+                    <th>Code</th>
+                    <th>Lien</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-dept="dsh">
+                    <td>Anglais semestre 7</td>
+                    <td>2101</td>
+                    <td><span class="badge dsh">DSH_2101</span></td>
+                    <td><a href="https://moodle.ensea.fr/course/view.php?id=923" target="_blank">Accéder</a></td>
+                </tr>
+                <tr data-dept="dti">
+                    <td>Machine Learning</td>
+                    <td>2201</td>
+                    <td><span class="badge dti">DTI_2201</span></td>
+                    <td><a href="https://moodle.ensea.fr/course/view.php?id=932" target="_blank">Accéder</a></td>
+                </tr>
+                <tr data-dept="dee">
+                    <td>Systèmes électroniques II</td>
+                    <td>2301</td>
+                    <td><span class="badge dee">DEE_2301</span></td>
+                    <td><a href="https://moodle.ensea.fr/course/view.php?id=918" target="_blank">Accéder</a></td>
+                </tr>
+                <tr data-dept="dee">
+                    <td>Electronique de puissance</td>
+                    <td>2401</td>
+                    <td><span class="badge dee">DEE_2401</span></td>
+                    <td><a href="https://moodle.ensea.fr/course/view.php?id=916" target="_blank">Accéder</a></td>
+                </tr>
+                <tr data-dept="dti">
+                    <td>FPGA</td>
+                    <td>2501</td>
+                    <td><span class="badge dti">DTI_2501</span></td>
+                    <td><a href="https://moodle.ensea.fr/course/view.php?id=921" target="_blank">Accéder</a></td>
+                </tr>
+                <tr data-dept="dsh">
+                    <td>Management durable des activités de projet</td>
+                    <td>2601</td>
+                    <td><span class="badge dsh">DSH_2601</span></td>
+                    <td><a href="https://moodle.ensea.fr/course/view.php?id=929" target="_blank">Accéder</a></td>
+                </tr>
+                <tr data-dept="dee">
+                    <td>Projet</td>
+                    <td>2701</td>
+                    <td><span class="badge dee">DEE_2701</span></td>
+                    <td><a href="https://moodle.ensea.fr/course/view.php?id=928" target="_blank">Accéder</a></td>
+                </tr>
+            </tbody>
+        </table>
+        <footer style="text-align:center;margin-top:32px;color:#888;font-size:1em;">By Nameless</footer>
+    </main>
+    <script>
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('coursTable');
+            const rows = table.getElementsByTagName('tr');
+            
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const cells = row.getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    if (cells[j].textContent.toLowerCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                row.style.display = found ? '' : 'none';
+            }
+        }
+    </script>
+</body>
+</html>
