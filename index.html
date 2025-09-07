@@ -185,6 +185,26 @@
             'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE'
         ];
 
+        // Load default ICS file on page load
+        async function loadDefaultICS() {
+            try {
+                const response = await fetch('ADECal.ics');
+                if (response.ok) {
+                    const content = await response.text();
+                    events = parseICS(content);
+                    renderCalendar();
+                    updateEventsList();
+                    
+                    // Update upload label to show default file loaded
+                    const label = document.querySelector('.upload-label');
+                    label.textContent = `✅ ADECal.ics (${events.length} events) - Default`;
+                    label.style.color = '#00ff99';
+                }
+            } catch (error) {
+                console.log('No default calendar file found');
+            }
+        }
+
         function loadICSFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -335,7 +355,10 @@
             currentDate.setMonth(currentDate.getMonth() + direction);
             renderCalendar();
         }
+
+        // Initialize calendar and load default file
         renderCalendar();
+        loadDefaultICS();
     </script>
 </body>
 </html>
