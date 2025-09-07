@@ -17,6 +17,10 @@
                 <h1>ENSEA S7</h1>
                 <span class="version">v2025.26</span>
             </div>
+            <nav class="tech-nav">
+                <button class="nav-btn active" onclick="showTab('courses')">📚 COURSES</button>
+                <button class="nav-btn" onclick="showTab('calendar')">📅 CALENDAR</button>
+            </nav>
             <div class="status">
                 <span class="status-dot active"></span>
                 <span>ONLINE</span>
@@ -30,15 +34,18 @@
                 <span class="control yellow"></span>
                 <span class="control green"></span>
             </div>
-            <span class="terminal-title">~/courses/s7 $</span>
+            <span class="terminal-title">~/ensea/dashboard $</span>
         </div>
-        <div class="search-container">
-            <div class="search-wrapper">
-                <span class="search-prompt">></span>
-                <input type="text" id="searchInput" placeholder="grep -i 'course_name'" onkeyup="filterTable()">
+        
+        <!-- COURSES TAB -->
+        <div id="courses-tab" class="tab-content active">
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <span class="search-prompt">></span>
+                    <input type="text" id="searchInput" placeholder="grep -i 'course_name'" onkeyup="filterTable()">
+                </div>
             </div>
-        </div>
-        <table id="coursTable" class="tech-table">
+            <table id="coursTable" class="tech-table">
             <thead>
                 <tr>
                     <th><span class="th-icon">📋</span>Course Name</th>
@@ -92,6 +99,35 @@
                 </tr>
             </tbody>
         </table>
+        </div>
+
+        <!-- CALENDAR TAB -->
+        <div id="calendar-tab" class="tab-content">
+            <div class="calendar-controls">
+                <div class="file-upload-wrapper">
+                    <span class="upload-prompt">></span>
+                    <input type="file" id="icsFile" accept=".ics" onchange="loadICSFile(event)">
+                    <label for="icsFile" class="upload-label">televerser un fichier schedule.ics</label>
+                </div>
+                <div class="calendar-nav">
+                    <button class="nav-arrow" onclick="changeMonth(-1)">◀</button>
+                    <span id="currentMonth" class="current-month">SEPTEMBRE 2025</span>
+                    <button class="nav-arrow" onclick="changeMonth(1)">▶</button>
+                </div>
+            </div>
+            <div id="calendar-container" class="calendar-container">
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated here -->
+                </div>
+                <div class="events-panel" id="eventsPanel">
+                    <h3 class="events-title">📅 SCHEDULE.LOG</h3>
+                    <div id="eventsList" class="events-list">
+                        <div class="no-events">Aucun fichier .ics chargé</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <footer class="tech-footer">
             <div class="footer-content">
                 <span class="created-by">Created by <strong>Nameless</strong></span>
@@ -100,6 +136,24 @@
         </footer>
     </main>
     <script>
+        // === TAB MANAGEMENT ===
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // === SEARCH FUNCTIONALITY ===
         function filterTable() {
             const input = document.getElementById('searchInput');
             const filter = input.value.toLowerCase();
@@ -111,8 +165,8 @@
                 const cells = row.getElementsByTagName('td');
                 let found = false;
                 
-                for (let j = 0; j < cells.length; j++) {
-                    if (cells[j].textContent.toLowerCase().indexOf(filter) > -1) {
+                for (const cell of cells) {
+                    if (cell.textContent.toLowerCase().indexOf(filter) > -1) {
                         found = true;
                         break;
                     }
@@ -121,6 +175,167 @@
                 row.style.display = found ? '' : 'none';
             }
         }
+
+        // === CALENDAR FUNCTIONALITY ===
+        let currentDate = new Date();
+        let events = [];
+
+        const monthNames = [
+            'JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN',
+            'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE'
+        ];
+
+        function loadICSFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                events = parseICS(content);
+                renderCalendar();
+                updateEventsList();
+                
+                // Update upload label to show success
+                const label = document.querySelector('.upload-label');
+                label.textContent = `✅ ${file.name} (${events.length} events)`;
+                label.style.color = '#00ff99';
+            };
+            reader.readAsText(file);
+        }
+
+        function parseICS(content) {
+            const events = [];
+            const eventBlocks = content.split('BEGIN:VEVENT');
+            
+            for (let i = 1; i < eventBlocks.length; i++) {
+                const block = eventBlocks[i];
+                const event = {};
+                
+                // Parse SUMMARY - more flexible regex
+                const summaryMatch = block.match(/SUMMARY:(.+?)(?:\r?\n)/s);
+                if (summaryMatch) {
+                    event.title = summaryMatch[1].trim().replace(/\\n/g, ' ');
+                }
+                
+                // Parse DTSTART - handle both formats
+                const startMatch = block.match(/DTSTART:(\d{8}T\d{6}Z)/);
+                if (startMatch) {
+                    const dateStr = startMatch[1];
+                    event.start = new Date(
+                        parseInt(dateStr.substr(0, 4)),
+                        parseInt(dateStr.substr(4, 2)) - 1,
+                        parseInt(dateStr.substr(6, 2)),
+                        parseInt(dateStr.substr(9, 2)),
+                        parseInt(dateStr.substr(11, 2))
+                    );
+                }
+                
+                // Parse DTEND
+                const endMatch = block.match(/DTEND:(\d{8}T\d{6}Z)/);
+                if (endMatch) {
+                    const dateStr = endMatch[1];
+                    event.end = new Date(
+                        parseInt(dateStr.substr(0, 4)),
+                        parseInt(dateStr.substr(4, 2)) - 1,
+                        parseInt(dateStr.substr(6, 2)),
+                        parseInt(dateStr.substr(9, 2)),
+                        parseInt(dateStr.substr(11, 2))
+                    );
+                }
+                
+                // Parse LOCATION - more flexible
+                const locationMatch = block.match(/LOCATION:(.+?)(?:\r?\n)/s);
+                if (locationMatch) {
+                    event.location = locationMatch[1].trim().replace(/\\,/g, ',').replace(/\\n/g, ' ');
+                }
+                
+                if (event.title && event.start) {
+                    events.push(event);
+                }
+            }
+            
+            return events;
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthLabel = document.getElementById('currentMonth');
+            
+            monthLabel.textContent = monthNames[currentDate.getMonth()] + ' ' + currentDate.getFullYear();
+            
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            grid.innerHTML = `
+                <div class="calendar-header">
+                    <div class="day-header">DIM</div>
+                    <div class="day-header">LUN</div>
+                    <div class="day-header">MAR</div>
+                    <div class="day-header">MER</div>
+                    <div class="day-header">JEU</div>
+                    <div class="day-header">VEN</div>
+                    <div class="day-header">SAM</div>
+                </div>
+            `;
+            
+            for (let week = 0; week < 6; week++) {
+                for (let day = 0; day < 7; day++) {
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + (week * 7) + day);
+                    
+                    const dayEvents = events.filter(event => 
+                        event.start.toDateString() === date.toDateString()
+                    );
+                    
+                    const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+                    const isToday = date.toDateString() === new Date().toDateString();
+                    
+                    const dayEl = document.createElement('div');
+                    dayEl.className = `calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}`;
+                    dayEl.innerHTML = `
+                        <div class="day-number">${date.getDate()}</div>
+                        <div class="day-events">
+                            ${dayEvents.map(event => `
+                                <div class="mini-event" title="${event.title}">
+                                    ${event.title.substring(0, 20)}${event.title.length > 20 ? '...' : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    grid.appendChild(dayEl);
+                }
+            }
+        }
+        function updateEventsList() {
+            const eventsList = document.getElementById('eventsList');
+            
+            if (events.length === 0) {
+                eventsList.innerHTML = '<div class="no-events">Aucun événement trouvé</div>';
+                return;
+            }
+            
+            const sortedEvents = events.sort((a, b) => a.start - b.start);
+            
+            eventsList.innerHTML = sortedEvents.map(event => `
+                <div class="event-item">
+                    <div class="event-time">
+                        ${event.start.toLocaleDateString('fr-FR')} 
+                        ${event.start.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}
+                        ${event.end ? ' - ' + event.end.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) : ''}
+                    </div>
+                    <div class="event-title">${event.title}</div>
+                    ${event.location ? `<div class="event-location">📍 ${event.location}</div>` : ''}
+                </div>
+            `).join('');
+        }
+        function changeMonth(direction) {
+            currentDate.setMonth(currentDate.getMonth() + direction);
+            renderCalendar();
+        }
+        renderCalendar();
     </script>
 </body>
 </html>
